@@ -13,6 +13,13 @@ static void print_usage(const char* prog) {
               << " [--L <build_search_list=75>]"
               << " [--alpha <rng_alpha=1.2>]"
               << " [--gamma <degree_multiplier=1.5>]"
+              << " [--density_spread <adaptive_alpha_spread=0.0>]"
+              << std::endl;
+    std::cerr << "\nOptions:\n"
+              << "  --density_spread  Controls adaptive per-node alpha modulation.\n"
+              << "                    0.0 = global alpha (original behavior).\n"
+              << "                    0.4 = alpha varies by +/-20% based on local density.\n"
+              << "                    Triggers a two-pass build when > 0.\n"
               << std::endl;
 }
 
@@ -23,6 +30,7 @@ int main(int argc, char** argv) {
     uint32_t L = 75;
     float alpha = 1.2f;
     float gamma = 1.5f;
+    float density_spread = 0.0f;
 
     // Parse arguments
     for (int i = 1; i < argc; i++) {
@@ -33,6 +41,8 @@ int main(int argc, char** argv) {
         else if (arg == "--L" && i + 1 < argc)      L = std::atoi(argv[++i]);
         else if (arg == "--alpha" && i + 1 < argc)  alpha = std::atof(argv[++i]);
         else if (arg == "--gamma" && i + 1 < argc)  gamma = std::atof(argv[++i]);
+        else if (arg == "--density_spread" && i + 1 < argc)
+            density_spread = std::atof(argv[++i]);
         else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             return 0;
@@ -46,15 +56,16 @@ int main(int argc, char** argv) {
 
     std::cout << "=== Vamana Index Builder ===" << std::endl;
     std::cout << "Parameters:" << std::endl;
-    std::cout << "  R     = " << R << std::endl;
-    std::cout << "  L     = " << L << std::endl;
-    std::cout << "  alpha = " << alpha << std::endl;
-    std::cout << "  gamma = " << gamma << std::endl;
+    std::cout << "  R              = " << R << std::endl;
+    std::cout << "  L              = " << L << std::endl;
+    std::cout << "  alpha          = " << alpha << std::endl;
+    std::cout << "  gamma          = " << gamma << std::endl;
+    std::cout << "  density_spread = " << density_spread << std::endl;
 
     VamanaIndex index;
 
     Timer total_timer;
-    index.build(data_path, R, L, alpha, gamma);
+    index.build(data_path, R, L, alpha, gamma, density_spread);
     double total_time = total_timer.elapsed_seconds();
 
     std::cout << "\nTotal build time: " << total_time << " seconds" << std::endl;
