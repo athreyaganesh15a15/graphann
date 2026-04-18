@@ -1,69 +1,9 @@
-GraphANN Workflow and Algorithmic
-Improvements
-1 Current Repository Workflow
-The Vamana index operates in two main phases. The repository is modular,
-splitting core logic into vamana index.cpp and I/O tasks into separate
-utilities.
-1.1 Phase 1: Index Construction (Build)
-The graph is built by inserting points in a randomized order. OpenMP is used
-heavily here to parallelize the workload across threads, utilizing per-node
-mutexes to prevent race conditions when updating edges. For every point
-inserted:
-1. Greedy Search: The algorithm searches the current graph to find the
-closest existing nodes to the new point, generating a candidate list bounded
-by a parameter L.
-2. Robust Pruning (α-RNG): This is the core heuristic of the graph. The
-candidates are pruned to a maximum out-degree of R. A candidate c is
-only kept if the distance dist(node, c) ≤ α×dist(c, n) for all previously
-added neighbors n.
-3. Edge Addition & Degree Checking: Forward and backward edges are
-established. If a neighbor’s degree exceeds γ × R, its connections are
-dynamically re-pruned to maintain the memory constraints.
-1.2 Phase 2: Query Search
-The search phase uses a greedy beam search starting from a fixed node. It ex-
-plores the graph by evaluating geometric distance to neighbors, maintaining
-a bounded priority queue of size L, and finally returning the top-K nearest
-neighbors.
-2 Problem Statement & Optimization Goals
-My goal for the next phase is to maximize the mathematical accuracy of the
-returned neighbors. Because memory is a hard constraint, we cannot simply
-increase the maximum out-degree R or the search list size L, as this linearly
-increases RAM usage and traversal overhead. We must connect the graph
-smarter, not denser.
-3 Proposed Methodology: AI Coding Agents
-Instead of relying entirely on manual trial-and-error, I will deploy LLM-
-based coding agents in an automated evolutionary loop to search for algo-
-rithmic improvements. Below are the specific agent architectures I plan to
-explore:
-3.1 Evolutionary Mutation Agents (The ”FunSearch” Ap-
-proach)
-We can constrain an agent strictly to the ‘robust prune()‘ function. By ask-
-ing the agent to mutate the mathematical α-RNG selection logic, it may dis-
-cover non-linear distance weighting or adaptive pruning thresholds. Because
-the maximum degree R remains hard-coded, any newly discovered edge-
-selection heuristics will improve recall without utilizing additional memory.
-3.2 Adaptive Heuristic Discovery
-Currently, the Vamana algorithm uses global values for α and γ. I will task
-an agent to write C++ functions that calculate a node’s local density. We can
-then use an optimizer (like Optuna) paired with the agent to assign dynamic
-α values—e.g., using strict pruning in dense clusters and relaxed pruning for
-statistical outliers.
-3.3 Search Traversal Optimization (Secondary Goal: Time)
-To address our secondary goal of speed, an agent can be unleashed on the
-‘greedy search()‘ function. By rewriting the traversal heuristic—such as
-modifying the ‘visited‘ list array or proposing a custom priority queue that
-penalizes backtracking—the agent might find a path to the true nearest neigh-
-bors utilizing fewer distance computations.
-3.4 Precision-Reduction Agents
-If we want to artificially increase our memory budget to allow a higher R
-(which drastically boosts recall), we must shrink the data. I will task an agent
-with modifying ‘distance.cpp‘ to implement standard or product quantization
-(e.g., converting float32 vectors to int8). The goal here is to test if
-halving the memory footprint via compression allows us to double the graph
-connectivity for a net-positive gain in recall.
-4 Next Steps
-My immediate next step is to build an automated Python evaluation loop.
-This script will sandbox the agent’s C++ code, compile it, run the SIFT1M
-benchmark using the provided run sift1m.sh script, calculate a fitness
-score based on Recall@10 and memory usage, and feed the results back to
-the agent for continuous iteration.
+To optimize the Vamana algorithm specifically for maximum accuracy (recall) under a strict memory constraint (index size)—with execution time as a secondary bonus—you need an agent architecture that excels at bounded heuristic discovery. Because memory in a graph ANN is largely dictated by the maximum out-degree of the nodes ($R$) and the size of the vectors themselves, the agent must find ways to connect the graph smarter, not denser.Here are the specific types of coding agents and setups you should build or deploy for this challenge:
+
+1. Evolutionary/Mutation-Based Agents (The "FunSearch" Approach)This is currently the most powerful paradigm for this specific type of problem. You restrict the agent from modifying the core data structures and instead point it exclusively at the mathematical heuristics governing the graph.How it targets your goals: * Accuracy: It mutates the $\alpha$-RNG (Relative Neighborhood Graph) pruning logic in robust_prune(). It might discover non-linear distance weighting or adaptive pruning thresholds that retain better long-range edges for search convergence.Memory: You enforce a hard constraint on the maximum out-degree ($R$). The agent must replace existing edges, not add more, keeping memory perfectly static.Implementation Strategy: Give the agent the vamana_index.cpp file. Ask it to write a new C++ function for edge selection. Write a Python sandbox script that compiles the C++, runs your SIFT benchmark, and calculates a fitness score: Fitness = Recall@10 + (0.01 * Speed). If the build crashes or memory exceeds a threshold, the fitness is zero. Feed the best-scoring snippets back to the LLM to mutate again.
+
+2. Adaptive Heuristic Agents (LLM + Optuna Integration)Instead of just asking an agent to write code, you pair an LLM with a sophisticated hyperparameter optimization framework like Optuna. However, instead of tuning static parameters, the agent writes code for dynamic parameters.How it targets your goals:Currently, Vamana uses a global $\alpha$ and $\gamma$. An agent could write code that makes $\alpha$ dynamic based on a node's local density (e.g., if a node is in a dense cluster, use strict pruning; if it is an outlier, use relaxed pruning).Memory: Still bounded by $R$, but the quality of the graph topology improves significantly for search accuracy.Implementation Strategy: The agent proposes C++ code modifications to calculate local density metrics on the fly. The Optuna engine then efficiently searches the numerical continuous space for the variables the agent just invented, reporting the accuracy vs. memory tradeoff curve back to you.
+
+3. Graph Traversal / Policy Formulation AgentsIf you want to squeeze out secondary time improvements without touching the memory, you can use an agent to rewrite the search phase rather than the build phase.How it targets your goals:Time & Accuracy: The standard greedy_search() evaluates neighbors purely based on distance. An agent could write a more sophisticated traversal heuristic—perhaps a look-ahead mechanism or a custom priority queue sorting logic that heavily penalizes backtracking.Memory: Zero impact on the index size, as it only changes the query-time search logic.Implementation Strategy: Prompt the agent to act as a "Routing Optimization AI." Feed it the search() loop and ask it to propose alternative ways to manage the visited list and candidate queue that might hit the true nearest neighbors faster or with higher probability before the beam width ($L$) runs out.
+
+4. Precision-Reduction AgentsSince memory is a hard constraint, an agent can look at how the data itself is stored and computed.How it targets your goals:Memory & Speed: The agent explores modifying distance.cpp and vamana_index.h to use lower-precision arithmetic (e.g., standardizing float16 or int8 quantization) for the base vectors.Accuracy: If the agent halves the memory footprint by compressing the vectors, it can then double the graph connectivity ($R$) within the same original memory budget, which drastically increases the structural accuracy (recall) of the search.Implementation Strategy: Task an agent with implementing Product Quantization (PQ) or scalar quantization specifically tailored to the Vamana architecture, testing the distance calculation accuracy degradation against the recall improvements gained from a denser graph
