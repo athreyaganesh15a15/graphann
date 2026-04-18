@@ -73,8 +73,8 @@ int main(int argc, char** argv) {
 
     try {
         if (exp_num == 1) {
-            std::cout << "=== EXPERIMENT 1: Beam Width (only L=50, 75) ===\n";
-            std::vector<uint32_t> L_values = {50, 75};
+            std::cout << "=== EXPERIMENT 1: Beam Width (L=50,75,100,125,150) ===\n";
+            std::vector<uint32_t> L_values = {50, 75, 100, 125, 150};
             auto results = ExperimentRunner::experiment_beam_width(
                 data_path, query_path, gt_path, R, alpha, gamma, L_values, K);
             all_results.insert(all_results.end(), results.begin(), results.end());
@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
             all_results.insert(all_results.end(), results.begin(), results.end());
 
         } else if (exp_num == 4) {
-            std::cout << "=== EXPERIMENT 4: Degree Analysis (only alpha=1.2) ===\n";
-            std::vector<float> alpha_values = {1.2f};
+            std::cout << "=== EXPERIMENT 4: Degree Analysis (alpha=1.0,1.2,1.5) ===\n";
+            std::vector<float> alpha_values = {1.0f, 1.2f, 1.5f};
             auto results = ExperimentRunner::experiment_degree_analysis(
                 data_path, query_path, gt_path, R, L, gamma, alpha_values, K);
             all_results.insert(all_results.end(), results.begin(), results.end());

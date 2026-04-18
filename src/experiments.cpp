@@ -198,56 +198,92 @@ ExperimentRunner::experiment_medoid_start(const std::string& data_path,
     std::cout << "\n=== Medoid Start Node Experiment ===" << std::endl;
     std::vector<ExperimentResult> results;
 
-    // Load data and queries
-    FloatMatrix data_mat = load_fbin(data_path);
     FloatMatrix queries_mat = load_fbin(query_path);
     IntMatrix gt_mat = load_ibin(gt_path);
     uint32_t nqueries = queries_mat.npts;
 
-    // Compute medoid
+    // Load data to compute medoid
+    FloatMatrix data_mat = load_fbin(data_path);
     uint32_t medoid = compute_medoid(data_mat.data.get(), data_mat.npts, data_mat.dims);
     std::cout << "Computed medoid: " << medoid << std::endl;
 
-    // Build once with medoid start
-    std::cout << "\nBuilding with medoid start node" << std::endl;
-    VamanaIndex index;
-    Timer build_timer;
-    index.build_with_start_node(data_path, R, L, alpha, gamma, medoid);
-    double build_time = build_timer.elapsed_seconds();
+    // === Test 1: Random Start Node (Baseline) ===
+    std::cout << "\nTest 1: Random Start Node (baseline)" << std::endl;
+    {
+        VamanaIndex index1;
+        Timer build_timer;
+        index1.build(data_path, R, L, alpha, gamma);
+        double build_time = build_timer.elapsed_seconds();
 
-    // Evaluate recall
-    std::vector<double> recalls;
-    std::vector<double> latencies;
+        std::vector<double> recalls;
+        std::vector<double> latencies;
 
-    for (uint32_t q = 0; q < nqueries; q++) {
-        SearchResult sr = index.search(queries_mat.data.get() + q * queries_mat.dims,
-                                      K, L);
-        double recall = compute_recall(sr.ids, gt_mat.data.get() + q * gt_mat.dims, K);
-        recalls.push_back(recall);
-        latencies.push_back(sr.latency_us);
+        for (uint32_t q = 0; q < nqueries; q++) {
+            SearchResult sr = index1.search(queries_mat.data.get() + q * queries_mat.dims, K, L);
+            double recall = compute_recall(sr.ids, gt_mat.data.get() + q * gt_mat.dims, K);
+            recalls.push_back(recall);
+            latencies.push_back(sr.latency_us);
+        }
+
+        std::sort(recalls.begin(), recalls.end());
+        double avg_recall = std::accumulate(recalls.begin(), recalls.end(), 0.0) / recalls.size();
+        double avg_latency = std::accumulate(latencies.begin(), latencies.end(), 0.0) / latencies.size();
+
+        const auto& graph = index1.get_graph();
+        DegreeStats deg_stats = compute_degree_stats(graph);
+
+        ExperimentResult result;
+        result.experiment_name = "medoid_start";
+        result.variant = "random";
+        result.build_time_sec = build_time;
+        result.avg_recall = avg_recall;
+        result.avg_latency_us = avg_latency;
+        result.avg_degree = deg_stats.avg_degree;
+        result.min_degree = deg_stats.min_degree;
+        result.max_degree = deg_stats.max_degree;
+
+        results.push_back(result);
+        std::cout << "  Recall: " << avg_recall << ", Latency: " << avg_latency << " us" << std::endl;
     }
 
-    std::sort(recalls.begin(), recalls.end());
-    double avg_recall = std::accumulate(recalls.begin(), recalls.end(), 0.0) / recalls.size();
-    double avg_latency = std::accumulate(latencies.begin(), latencies.end(), 0.0) / latencies.size();
+    // === Test 2: Medoid Start Node ===
+    std::cout << "\nTest 2: Medoid Start Node" << std::endl;
+    {
+        VamanaIndex index2;
+        Timer build_timer;
+        index2.build_with_start_node(data_path, R, L, alpha, gamma, medoid);
+        double build_time = build_timer.elapsed_seconds();
 
-    const auto& graph = index.get_graph();
-    DegreeStats deg_stats = compute_degree_stats(graph);
+        std::vector<double> recalls;
+        std::vector<double> latencies;
 
-    ExperimentResult result;
-    result.experiment_name = "medoid_start";
-    result.variant = "medoid";
-    result.build_time_sec = build_time;
-    result.avg_recall = avg_recall;
-    result.avg_latency_us = avg_latency;
-    result.avg_degree = deg_stats.avg_degree;
-    result.min_degree = deg_stats.min_degree;
-    result.max_degree = deg_stats.max_degree;
+        for (uint32_t q = 0; q < nqueries; q++) {
+            SearchResult sr = index2.search(queries_mat.data.get() + q * queries_mat.dims, K, L);
+            double recall = compute_recall(sr.ids, gt_mat.data.get() + q * gt_mat.dims, K);
+            recalls.push_back(recall);
+            latencies.push_back(sr.latency_us);
+        }
 
-    results.push_back(result);
+        std::sort(recalls.begin(), recalls.end());
+        double avg_recall = std::accumulate(recalls.begin(), recalls.end(), 0.0) / recalls.size();
+        double avg_latency = std::accumulate(latencies.begin(), latencies.end(), 0.0) / latencies.size();
 
-    std::cout << "  Recall: " << avg_recall << std::endl;
-    std::cout << "  Latency: " << avg_latency << " us" << std::endl;
+        const auto& graph = index2.get_graph();
+        DegreeStats deg_stats = compute_degree_stats(graph);
+
+        ExperimentResult result;
+        result.experiment_name = "medoid_start";
+        result.variant = "medoid";
+        result.build_time_sec = build_time;
+        result.avg_recall = avg_recall;
+        result.avg_latency_us = avg_latency;
+        result.avg_degree = deg_stats.avg_degree;
+        result.min_degree = deg_stats.min_degree;
+        result.max_degree = deg_stats.max_degree;
+
+        results.push_back(result);
+        std::cout << "  Recall: " << avg_recall << ", Latency: " << avg_latency << " us" << std::endl;
+    }
 
     return results;
 }
