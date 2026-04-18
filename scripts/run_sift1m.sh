@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 #
-# Downloads SIFT1M, converts to fbin/ibin, builds Vamana indices, and runs search.
-# Builds both a baseline (global alpha) and an optimized (adaptive alpha) index
-# for comparison.
-#
+# Downloads SIFT1M, converts to fbin/ibin, builds a Vamana index, and runs search.
 # Usage: ./scripts/run_sift1m.sh
 #
 set -euo pipefail
@@ -21,7 +18,6 @@ BASE_FBIN="$DATA_DIR/sift_base.fbin"
 QUERY_FBIN="$DATA_DIR/sift_query.fbin"
 GT_IBIN="$DATA_DIR/sift_gt.ibin"
 INDEX_BIN="$DATA_DIR/sift_index.bin"
-INDEX_ADAPTIVE_BIN="$DATA_DIR/sift_index_adaptive.bin"
 
 # ─── 1. Build the project ────────────────────────────────────────────────────
 echo "=== Step 1: Building the project ==="
@@ -60,39 +56,18 @@ else
 fi
 echo ""
 
-# ─── 4a. Build BASELINE index (global alpha, medoid start node) ──────────────
-echo "=== Step 4a: Building BASELINE Vamana index ==="
+# ─── 4. Build the index ──────────────────────────────────────────────────────
+echo "=== Step 4: Building the Vamana index ==="
 "$BUILD_DIR/build_index" \
     --data "$BASE_FBIN" \
     --output "$INDEX_BIN" \
-    --R 32 --L 75 --alpha 1.2 --gamma 1.5 \
-    --density_spread 0.0
+    --R 32 --L 75 --alpha 1.2 --gamma 1.5
 echo ""
 
-# ─── 4b. Build ADAPTIVE index (density-aware alpha, two-pass) ────────────────
-echo "=== Step 4b: Building ADAPTIVE Vamana index ==="
-"$BUILD_DIR/build_index" \
-    --data "$BASE_FBIN" \
-    --output "$INDEX_ADAPTIVE_BIN" \
-    --R 32 --L 75 --alpha 1.2 --gamma 1.5 \
-    --density_spread 0.4
-echo ""
-
-# ─── 5a. Search BASELINE ─────────────────────────────────────────────────────
-echo "=== Step 5a: Searching BASELINE index ==="
+# ─── 5. Search and evaluate ──────────────────────────────────────────────────
+echo "=== Step 5: Searching and evaluating recall ==="
 "$BUILD_DIR/search_index" \
     --index "$INDEX_BIN" \
-    --data "$BASE_FBIN" \
-    --queries "$QUERY_FBIN" \
-    --gt "$GT_IBIN" \
-    --K 10 \
-    --L 10,20,30,50,75,100,150,200
-echo ""
-
-# ─── 5b. Search ADAPTIVE ─────────────────────────────────────────────────────
-echo "=== Step 5b: Searching ADAPTIVE index ==="
-"$BUILD_DIR/search_index" \
-    --index "$INDEX_ADAPTIVE_BIN" \
     --data "$BASE_FBIN" \
     --queries "$QUERY_FBIN" \
     --gt "$GT_IBIN" \

@@ -24,8 +24,6 @@ struct SearchResult {
 //     edges for better navigability).
 //   - R is the max out-degree; gamma*R is the threshold that triggers pruning
 //     on neighbor nodes when backward edges are added.
-//   - Density-adaptive pruning: alpha is modulated per-node based on local
-//     density estimates gathered during build.
 class VamanaIndex {
   public:
     VamanaIndex() = default;
@@ -33,13 +31,12 @@ class VamanaIndex {
 
     // ---- Build ----
     // Loads data from an fbin file and builds the Vamana graph.
-    //   R:              max out-degree per node
-    //   L:              search list size during construction (L >= R)
-    //   alpha:          RNG pruning parameter (typically 1.0 - 1.5)
-    //   gamma:          max-degree multiplier for triggering neighbor pruning
-    //   density_spread: how much alpha varies with local density (0 = global alpha)
+    //   R:     max out-degree per node
+    //   L:     search list size during construction (L >= R)
+    //   alpha: RNG pruning parameter (typically 1.0 - 1.5)
+    //   gamma: max-degree multiplier for triggering neighbor pruning (e.g. 1.5)
     void build(const std::string& data_path, uint32_t R, uint32_t L,
-               float alpha, float gamma, float density_spread = 0.0f);
+               float alpha, float gamma);
 
     // ---- Search ----
     // Search for K nearest neighbors of a query vector.
@@ -54,6 +51,21 @@ class VamanaIndex {
 
     // Load index from a binary file. Data file must also be loaded separately.
     void load(const std::string& index_path, const std::string& data_path);
+
+    // ---- Experiment Support ----
+    // Build with custom start node
+    void build_with_start_node(const std::string& data_path, uint32_t R, uint32_t L,
+                               float alpha, float gamma, uint32_t start_node);
+
+    // Build a second pass (graph refinement)
+    void build_second_pass(uint32_t R, uint32_t L, float alpha, float gamma);
+
+    // Get graph for direct access (for experiments)
+    const std::vector<std::vector<uint32_t>>& get_graph() const { return graph_; }
+
+    // Greedy search with scratch buffer (optimization)
+    SearchResult search_with_scratch(const float* query, uint32_t K, uint32_t L,
+                                     std::vector<bool>& scratch_visited) const;
 
     uint32_t get_npts() const { return npts_; }
     uint32_t get_dim()  const { return dim_; }
@@ -71,12 +83,8 @@ class VamanaIndex {
 
     // Alpha-RNG pruning: selects a diverse subset of candidates as neighbors.
     // Modifies graph_[node] in place. Candidates should NOT include node itself.
-    // Uses adaptive alpha if local_density_ is populated and density_spread_ > 0.
     void robust_prune(uint32_t node, std::vector<Candidate>& candidates,
                       float alpha, uint32_t R);
-
-    // Compute medoid (point closest to dataset centroid) — used as start node.
-    uint32_t compute_medoid() const;
 
     // ---- Data ----
     float*   data_    = nullptr;  // contiguous row-major [npts x dim], aligned
@@ -87,10 +95,6 @@ class VamanaIndex {
     // ---- Graph ----
     std::vector<std::vector<uint32_t>> graph_;  // adjacency lists
     uint32_t start_node_ = 0;
-
-    // ---- Density-adaptive pruning ----
-    std::vector<float> local_density_;      // per-node density estimate [0, 1]
-    float density_spread_ = 0.0f;           // how much alpha varies (0 = disabled)
 
     // ---- Concurrency ----
     // Per-node locks for parallel build (mutable so search can be const).
