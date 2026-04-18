@@ -345,3 +345,227 @@ void VamanaIndex::load(const std::string& index_path,
     std::cout << "Index loaded: " << npts_ << " points, " << dim_
               << " dims, start=" << start_node_ << std::endl;
 }
+
+// ============================================================================
+// Build with Custom Start Node (for experiments)
+// ============================================================================
+
+void VamanaIndex::build_with_start_node(const std::string& data_path, uint32_t R, uint32_t L,
+                                        float alpha, float gamma, uint32_t start_node) {
+    // Load data
+    std::cout << "Loading data from " << data_path << "..." << std::endl;
+    FloatMatrix mat = load_fbin(data_path);
+    npts_ = mat.npts;
+    dim_  = mat.dims;
+    data_ = mat.data.release();
+    owns_data_ = true;
+
+    std::cout << "  Points: " << npts_ << ", Dimensions: " << dim_ << std::endl;
+
+    if (L < R) {
+        std::cerr << "Warning: L (" << L << ") < R (" << R << "). Setting L = R." << std::endl;
+        L = R;
+    }
+
+    // Initialize graph and locks
+    graph_.resize(npts_);
+    locks_ = std::vector<std::mutex>(npts_);
+
+    // Use provided start node
+    start_node_ = start_node;
+    std::cout << "  Start node: " << start_node_ << std::endl;
+
+    // Create random insertion order
+    std::mt19937 rng(42);
+    std::vector<uint32_t> perm(npts_);
+    std::iota(perm.begin(), perm.end(), 0);
+    std::shuffle(perm.begin(), perm.end(), rng);
+
+    // Build graph
+    uint32_t gamma_R = static_cast<uint32_t>(gamma * R);
+    std::cout << "Building index (R=" << R << ", L=" << L
+              << ", alpha=" << alpha << ", gamma=" << gamma
+              << ", gammaR=" << gamma_R << ")..." << std::endl;
+
+    Timer build_timer;
+
+    #pragma omp parallel for schedule(dynamic, 64)
+    for (size_t idx = 0; idx < npts_; idx++) {
+        uint32_t point = perm[idx];
+
+        auto [candidates, _dist_cmps] = greedy_search(get_vector(point), L);
+        robust_prune(point, candidates, alpha, R);
+
+        for (uint32_t nbr : graph_[point]) {
+            std::lock_guard<std::mutex> lock(locks_[nbr]);
+            graph_[nbr].push_back(point);
+
+            if (graph_[nbr].size() > gamma_R) {
+                std::vector<Candidate> nbr_candidates;
+                nbr_candidates.reserve(graph_[nbr].size());
+                for (uint32_t nn : graph_[nbr]) {
+                    float d = compute_l2sq(get_vector(nbr), get_vector(nn), dim_);
+                    nbr_candidates.push_back({d, nn});
+                }
+                robust_prune(nbr, nbr_candidates, alpha, R);
+            }
+        }
+
+        if (idx % 10000 == 0) {
+            #pragma omp critical
+            {
+                std::cout << "\r  Inserted " << idx << " / " << npts_
+                          << " points" << std::flush;
+            }
+        }
+    }
+
+    double build_time = build_timer.elapsed_seconds();
+
+    size_t total_edges = 0;
+    for (uint32_t i = 0; i < npts_; i++)
+        total_edges += graph_[i].size();
+    double avg_degree = (double)total_edges / npts_;
+
+    std::cout << "\n  Build complete in " << build_time << " seconds." << std::endl;
+    std::cout << "  Average out-degree: " << avg_degree << std::endl;
+}
+
+// ============================================================================
+// Second Pass Build (graph refinement)
+// ============================================================================
+
+void VamanaIndex::build_second_pass(uint32_t R, uint32_t L, float alpha, float gamma) {
+    if (!data_) {
+        throw std::runtime_error("No data loaded for second pass");
+    }
+
+    std::cout << "Running second pass build..." << std::endl;
+
+    uint32_t gamma_R = static_cast<uint32_t>(gamma * R);
+
+    Timer build_timer;
+
+    #pragma omp parallel for schedule(dynamic, 64)
+    for (size_t idx = 0; idx < npts_; idx++) {
+        uint32_t point = idx;
+
+        auto [candidates, _dist_cmps] = greedy_search(get_vector(point), L);
+        robust_prune(point, candidates, alpha, R);
+
+        for (uint32_t nbr : graph_[point]) {
+            std::lock_guard<std::mutex> lock(locks_[nbr]);
+            
+            // Check if edge already exists
+            bool exists = false;
+            for (uint32_t existing : graph_[nbr]) {
+                if (existing == point) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                graph_[nbr].push_back(point);
+            }
+
+            if (graph_[nbr].size() > gamma_R) {
+                std::vector<Candidate> nbr_candidates;
+                nbr_candidates.reserve(graph_[nbr].size());
+                for (uint32_t nn : graph_[nbr]) {
+                    float d = compute_l2sq(get_vector(nbr), get_vector(nn), dim_);
+                    nbr_candidates.push_back({d, nn});
+                }
+                robust_prune(nbr, nbr_candidates, alpha, R);
+            }
+        }
+
+        if (idx % 10000 == 0) {
+            #pragma omp critical
+            {
+                std::cout << "\r  Processed " << idx << " / " << npts_
+                          << " points" << std::flush;
+            }
+        }
+    }
+
+    double build_time = build_timer.elapsed_seconds();
+    std::cout << "\n  Second pass complete in " << build_time << " seconds." << std::endl;
+}
+
+// ============================================================================
+// Search with Pre-Allocated Scratch Buffer (optimization)
+// ============================================================================
+
+SearchResult VamanaIndex::search_with_scratch(const float* query, uint32_t K, uint32_t L,
+                                              std::vector<bool>& scratch_visited) const {
+    if (L < K) L = K;
+
+    // Reset scratch buffer
+    std::fill(scratch_visited.begin(), scratch_visited.end(), false);
+
+    Timer t;
+
+    std::set<Candidate> candidate_set;
+    uint32_t dist_cmps = 0;
+
+    float start_dist = compute_l2sq(query, get_vector(start_node_), dim_);
+    dist_cmps++;
+    candidate_set.insert({start_dist, start_node_});
+    scratch_visited[start_node_] = true;
+
+    std::set<uint32_t> expanded;
+
+    while (true) {
+        uint32_t best_node = UINT32_MAX;
+        for (const auto& [dist, id] : candidate_set) {
+            if (expanded.find(id) == expanded.end()) {
+                best_node = id;
+                break;
+            }
+        }
+        if (best_node == UINT32_MAX)
+            break;
+
+        expanded.insert(best_node);
+
+        std::vector<uint32_t> neighbors;
+        {
+            std::lock_guard<std::mutex> lock(locks_[best_node]);
+            neighbors = graph_[best_node];
+        }
+
+        for (uint32_t nbr : neighbors) {
+            if (scratch_visited[nbr])
+                continue;
+            scratch_visited[nbr] = true;
+
+            float d = compute_l2sq(query, get_vector(nbr), dim_);
+            dist_cmps++;
+
+            if (candidate_set.size() < L) {
+                candidate_set.insert({d, nbr});
+            } else {
+                auto worst = std::prev(candidate_set.end());
+                if (d < worst->first) {
+                    candidate_set.erase(worst);
+                    candidate_set.insert({d, nbr});
+                }
+            }
+        }
+    }
+
+    double latency = t.elapsed_us();
+
+    SearchResult result;
+    result.dist_cmps = dist_cmps;
+    result.latency_us = latency;
+    result.ids.reserve(K);
+
+    for (const auto& [dist, id] : candidate_set) {
+        if (result.ids.size() >= K)
+            break;
+        result.ids.push_back(id);
+    }
+
+    return result;
+}

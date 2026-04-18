@@ -18,6 +18,7 @@ add_library(graphann_lib STATIC
     src/distance.cpp
     src/io_utils.cpp
     src/vamana_index.cpp
+    src/experiments.cpp
 )
 target_include_directories(graphann_lib PUBLIC include)
 target_link_libraries(graphann_lib PUBLIC OpenMP::OpenMP_CXX)
@@ -29,3 +30,15 @@ target_link_libraries(build_index PRIVATE graphann_lib)
 # Search index executable
 add_executable(search_index src/search_index.cpp)
 target_link_libraries(search_index PRIVATE graphann_lib)
+
+# Experiment runner executable
+add_executable(experiment_runner src/experiment_runner.cpp)
+target_link_libraries(experiment_runner PRIVATE graphann_lib)
+
+# Experiment runner v2 (simplified)
+add_executable(experiment_runner_v2 src/experiment_runner_v2.cpp)
+target_link_libraries(experiment_runner_v2 PRIVATE graphann_lib)
+
+# Experiment runner v3 (minimal, working version)
+add_executable(experiment_runner_v3 src/experiment_runner_v3.cpp)
+target_link_libraries(experiment_runner_v3 PRIVATE graphann_lib)

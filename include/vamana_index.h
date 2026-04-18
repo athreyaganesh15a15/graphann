@@ -52,6 +52,21 @@ class VamanaIndex {
     // Load index from a binary file. Data file must also be loaded separately.
     void load(const std::string& index_path, const std::string& data_path);
 
+    // ---- Experiment Support ----
+    // Build with custom start node
+    void build_with_start_node(const std::string& data_path, uint32_t R, uint32_t L,
+                               float alpha, float gamma, uint32_t start_node);
+
+    // Build a second pass (graph refinement)
+    void build_second_pass(uint32_t R, uint32_t L, float alpha, float gamma);
+
+    // Get graph for direct access (for experiments)
+    const std::vector<std::vector<uint32_t>>& get_graph() const { return graph_; }
+
+    // Greedy search with scratch buffer (optimization)
+    SearchResult search_with_scratch(const float* query, uint32_t K, uint32_t L,
+                                     std::vector<bool>& scratch_visited) const;
+
     uint32_t get_npts() const { return npts_; }
     uint32_t get_dim()  const { return dim_; }
 
