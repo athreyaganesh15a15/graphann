@@ -79,7 +79,7 @@ if $RUN_R32; then
     "$BUILD_DIR/build_index" \
         --data "$BASE_FBIN" \
         --output "$INDEX_R32" \
-        --R 32 --L 75 --alpha 1.2 --gamma 1.5
+        --R 32 --L 75 --alpha 1.1 --gamma 1.5
     echo ""
 
     echo "=== R=32 Exact Float32 Search ==="
@@ -90,6 +90,28 @@ if $RUN_R32; then
         --gt "$GT_IBIN" \
         --K 10 \
         --L "$L_VALUES"
+    echo ""
+
+    echo "=== R=32 Quantized ADC Search (Optimization A) ==="
+    "$BUILD_DIR/search_index" \
+        --index "$INDEX_R32" \
+        --data "$BASE_FBIN" \
+        --queries "$QUERY_FBIN" \
+        --gt "$GT_IBIN" \
+        --K 10 \
+        --L "$L_VALUES" \
+        --quantized
+    echo ""
+
+    echo "=== R=32 Quantized + Dynamic Beam (Optimizations A+C) ==="
+    "$BUILD_DIR/search_index" \
+        --index "$INDEX_R32" \
+        --data "$BASE_FBIN" \
+        --queries "$QUERY_FBIN" \
+        --gt "$GT_IBIN" \
+        --K 10 \
+        --L "$L_VALUES" \
+        --quantized --dynamic
     echo ""
 fi
 

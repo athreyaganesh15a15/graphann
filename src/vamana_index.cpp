@@ -267,7 +267,10 @@ void VamanaIndex::robust_prune(uint32_t node, std::vector<Candidate>& candidates
         for (uint32_t selected : new_neighbors) {
             float dist_cand_to_selected =
                 compute_l2sq(get_vector(cand_id), get_vector(selected), dim_);
-            if (dist_to_node > alpha * dist_cand_to_selected) {
+            
+            float ratio = dist_cand_to_selected / (dist_to_node + 1e-6f);
+            float dynamic_alpha = alpha * (0.95f + 0.1f * std::min(1.0f, ratio));
+            if (dist_to_node > dynamic_alpha * dist_cand_to_selected) {
                 keep = false;
                 break;
             }

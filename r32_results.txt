@@ -1,0 +1,115 @@
+=== Step 1: Building the project ===
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/build
+Consolidate compiler generated dependencies of target graphann_lib
+[ 42%] Built target graphann_lib
+Consolidate compiler generated dependencies of target build_index
+Consolidate compiler generated dependencies of target experiment_runner_v3
+Consolidate compiler generated dependencies of target benchmark
+Consolidate compiler generated dependencies of target search_index
+[ 71%] Built target build_index
+[ 71%] Built target experiment_runner_v3
+[100%] Built target benchmark
+[100%] Built target search_index
+
+=== Step 2: Downloading SIFT1M ===
+SIFT1M already downloaded, skipping.
+
+=== Step 3: Converting to fbin/ibin ===
+Binary files already exist, skipping conversion.
+
+================================================================
+  CONFIGURATION: R=32, L=75, alpha=1.2 (Baseline)
+================================================================
+=== Building R=32 index ===
+=== Vamana Index Builder ===
+Parameters:
+  R     = 32
+  L     = 75
+  alpha = 1.1
+  gamma = 1.5
+Loading data from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_base.fbin...
+  Points: 1000000, Dimensions: 128
+  Medoid start node: 123742
+  Random R-regular graph initialized (R=32)
+Building index (R=32, L=75, alpha=1.1, gamma=1.5, gammaR=48)...
+  Inserted 0 / 1000000 points  Inserted 10000 / 1000000 points  Inserted 20000 / 1000000 points  Inserted 30000 / 1000000 points  Inserted 40000 / 1000000 points  Inserted 50000 / 1000000 points  Inserted 60000 / 1000000 points  Inserted 70000 / 1000000 points  Inserted 80000 / 1000000 points  Inserted 90000 / 1000000 points  Inserted 100000 / 1000000 points  Inserted 110000 / 1000000 points  Inserted 120000 / 1000000 points  Inserted 130000 / 1000000 points  Inserted 140000 / 1000000 points  Inserted 150000 / 1000000 points  Inserted 160000 / 1000000 points  Inserted 170000 / 1000000 points  Inserted 180000 / 1000000 points  Inserted 190000 / 1000000 points  Inserted 200000 / 1000000 points  Inserted 210000 / 1000000 points  Inserted 220000 / 1000000 points  Inserted 230000 / 1000000 points  Inserted 240000 / 1000000 points  Inserted 250000 / 1000000 points  Inserted 260000 / 1000000 points  Inserted 270000 / 1000000 points  Inserted 280000 / 1000000 points  Inserted 290000 / 1000000 points  Inserted 300000 / 1000000 points  Inserted 310000 / 1000000 points  Inserted 320000 / 1000000 points  Inserted 330000 / 1000000 points  Inserted 340000 / 1000000 points  Inserted 350000 / 1000000 points  Inserted 360000 / 1000000 points  Inserted 370000 / 1000000 points  Inserted 380000 / 1000000 points  Inserted 390000 / 1000000 points  Inserted 400000 / 1000000 points  Inserted 410000 / 1000000 points  Inserted 420000 / 1000000 points  Inserted 430000 / 1000000 points  Inserted 440000 / 1000000 points  Inserted 450000 / 1000000 points  Inserted 460000 / 1000000 points  Inserted 470000 / 1000000 points  Inserted 480000 / 1000000 points  Inserted 490000 / 1000000 points  Inserted 500000 / 1000000 points  Inserted 510000 / 1000000 points  Inserted 520000 / 1000000 points  Inserted 530000 / 1000000 points  Inserted 540000 / 1000000 points  Inserted 550000 / 1000000 points  Inserted 560000 / 1000000 points  Inserted 570000 / 1000000 points  Inserted 580000 / 1000000 points  Inserted 590000 / 1000000 points  Inserted 600000 / 1000000 points  Inserted 610000 / 1000000 points  Inserted 620000 / 1000000 points  Inserted 630000 / 1000000 points  Inserted 640000 / 1000000 points  Inserted 650000 / 1000000 points  Inserted 660000 / 1000000 points  Inserted 670000 / 1000000 points  Inserted 680000 / 1000000 points  Inserted 690000 / 1000000 points  Inserted 700000 / 1000000 points  Inserted 710000 / 1000000 points  Inserted 720000 / 1000000 points  Inserted 730000 / 1000000 points  Inserted 740000 / 1000000 points  Inserted 750000 / 1000000 points  Inserted 760000 / 1000000 points  Inserted 770000 / 1000000 points  Inserted 780000 / 1000000 points  Inserted 790000 / 1000000 points  Inserted 800000 / 1000000 points  Inserted 810000 / 1000000 points  Inserted 820000 / 1000000 points  Inserted 830000 / 1000000 points  Inserted 840000 / 1000000 points  Inserted 850000 / 1000000 points  Inserted 860000 / 1000000 points  Inserted 870000 / 1000000 points  Inserted 880000 / 1000000 points  Inserted 890000 / 1000000 points  Inserted 900000 / 1000000 points  Inserted 910000 / 1000000 points  Inserted 920000 / 1000000 points  Inserted 930000 / 1000000 points  Inserted 940000 / 1000000 points  Inserted 950000 / 1000000 points  Inserted 960000 / 1000000 points  Inserted 970000 / 1000000 points  Inserted 980000 / 1000000 points  Inserted 990000 / 1000000 points
+  Build complete in 115.718 seconds.
+  Average out-degree: 38.3899
+
+Total build time: 121.808 seconds
+Index saved to /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_index_r32.bin
+Done.
+
+=== R=32 Exact Float32 Search ===
+Loading index...
+Index loaded: 1000000 points, 128 dims, start=123742
+Loading queries from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_query.fbin...
+  Queries: 10000 x 128
+Loading ground truth from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_gt.ibin...
+  Ground truth: 10000 x 100
+
+=== Search Results (K=10) ===
+       L     Recall@10   Avg Dist Cmps  Avg Latency (us)  P99 Latency (us)
+--------------------------------------------------------------------------
+      10        0.8066           568.0             423.4            3234.1
+      20        0.9061           824.7             700.7            4444.5
+      30        0.9450          1066.0             984.4            5538.9
+      50        0.9748          1524.7            1482.6            6454.4
+      75        0.9870          2060.3            2130.7            8793.4
+     100        0.9921          2562.8            2661.0            9485.6
+     150        0.9959          3495.6            3713.7           11538.8
+     200        0.9973          4359.7            4686.7           13316.8
+
+Done.
+
+=== R=32 Quantized ADC Search (Optimization A) ===
+Loading index...
+Index loaded: 1000000 points, 128 dims, start=123742
+Building quantization tables...
+  Quantization complete in 0.894052s: 122 MB (from 488 MB float32)
+Loading queries from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_query.fbin...
+  Queries: 10000 x 128
+Loading ground truth from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_gt.ibin...
+  Ground truth: 10000 x 100
+
+=== Search Results (K=10, quantized) ===
+       L     Recall@10   Avg Dist Cmps  Avg Latency (us)  P99 Latency (us)
+--------------------------------------------------------------------------
+      10        0.8039           567.8             419.7            6253.9
+      20        0.9062           824.6             578.8            3956.8
+      30        0.9451          1065.8             869.1            4865.5
+      50        0.9748          1524.7            1410.4            6238.4
+      75        0.9870          2060.5            1994.8           10244.9
+     100        0.9922          2562.7            2581.4           10663.2
+     150        0.9960          3495.7            3404.1           10815.6
+     200        0.9972          4359.8            4262.4           12200.9
+
+Done.
+
+=== R=32 Quantized + Dynamic Beam (Optimizations A+C) ===
+Loading index...
+Index loaded: 1000000 points, 128 dims, start=123742
+Building quantization tables...
+  Quantization complete in 0.912056s: 122 MB (from 488 MB float32)
+Loading queries from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_query.fbin...
+  Queries: 10000 x 128
+Loading ground truth from /mnt/c/samrudh files/IITM Courses/Sem 4/Algorithms in Data Science DA2303/Project/graphann/tmp/sift_gt.ibin...
+  Ground truth: 10000 x 100
+
+=== Search Results (K=10, quantized, dynamic_beam) ===
+       L     Recall@10   Avg Dist Cmps  Avg Latency (us)  P99 Latency (us)
+--------------------------------------------------------------------------
+      10        0.4531           422.3             369.4            7674.2
+      20        0.8134           596.5             424.3            3908.4
+      30        0.9183          1010.0             804.4            5239.8
+      50        0.9696          1528.4            1392.0            6211.8
+      75        0.9855          2078.1            2049.8            8510.1
+     100        0.9913          2582.7            2430.7            8803.0
+     150        0.9958          3515.0            3426.0           10546.8
+     200        0.9972          4377.5            4334.8           12086.4
+
+Done.
+
+=== All benchmarks complete! ===

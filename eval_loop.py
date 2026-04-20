@@ -1,6 +1,7 @@
 import subprocess
 import re
 import json
+import sys
 
 def calculate_fitness(recall, latency):
     # Base fitness: multiply recall to make it dominant
@@ -16,12 +17,10 @@ def calculate_fitness(recall, latency):
     return fitness
 
 def main():
-    print("Building project...")
-    subprocess.run(["cmake", "--build", "build", "-j4"], check=True)
-
-    print("Running benchmark...")
+    print("Running benchmark script...")
+    # Using run instead of Popen so we can just wait for it and then parse
     process = subprocess.Popen(
-        ["bash", "scripts/run_sift1m.sh"], 
+        ["bash", "scripts/run_sift1m_full.sh", "--r64"], 
         stdout=subprocess.PIPE, 
         stderr=subprocess.STDOUT,
         text=True
@@ -31,25 +30,40 @@ def main():
     best_latency = 0.0
     best_fitness = -float('inf')
 
-    # Regex to match the table rows
-    #        L     Recall@10   Avg Dist Cmps  Avg Latency (us)  P99 Latency (us)
-    #      200        0.9965          4217.6            3848.1           11515.0
+    # States for parsing
+    in_target_section = False
+    in_table = False
+
     row_pattern = re.compile(r"^\s*\d+\s+([0-9\.]+)\s+[0-9\.]+\s+[0-9\.]+\s+([0-9\.]+)\s*$")
 
     for line in process.stdout:
-        # We can also print the line if we want to see it in real time
         print(line, end="")
-        match = row_pattern.match(line)
-        if match:
-            recall = float(match.group(1))
-            latency = float(match.group(2))
-            fitness = calculate_fitness(recall, latency)
+        sys.stdout.flush()
+        
+        if "=== R=64 Quantized + Dynamic Beam (Optimizations A+C) ===" in line:
+            in_target_section = True
             
-            # Keep the one with the highest fitness
-            if fitness > best_fitness:
-                best_fitness = fitness
-                best_recall = recall
-                best_latency = latency
+        if in_target_section and "=== Search Results (" in line:
+            in_table = True
+            continue
+            
+        if in_table:
+            if "Done." in line or "===" in line:
+                in_table = False
+                in_target_section = False
+                continue
+                
+            match = row_pattern.match(line)
+            if match:
+                recall = float(match.group(1))
+                latency = float(match.group(2))
+                fitness = calculate_fitness(recall, latency)
+                
+                # Keep the one with the highest fitness
+                if fitness > best_fitness:
+                    best_fitness = fitness
+                    best_recall = recall
+                    best_latency = latency
 
     result = {
         "recall": best_recall,
