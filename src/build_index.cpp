@@ -9,18 +9,19 @@ static void print_usage(const char* prog) {
     std::cerr << "Usage: " << prog
               << " --data <fbin_path>"
               << " --output <index_path>"
-              << " [--R <max_degree=32>]"
-              << " [--L <build_search_list=75>]"
+              << " [--R <max_degree=64>]"
+              << " [--L <build_search_list=100>]"
               << " [--alpha <rng_alpha=1.2>]"
               << " [--gamma <degree_multiplier=1.5>]"
+              << " [--single_pass]"
               << std::endl;
 }
 
 int main(int argc, char** argv) {
-    // Defaults
+    // Defaults (R=64 per best.md, L=100 to match best configuration)
     std::string data_path, output_path;
-    uint32_t R = 32;
-    uint32_t L = 75;
+    uint32_t R = 64;
+    uint32_t L = 100;
     float alpha = 1.2f;
     float gamma = 1.5f;
 
@@ -33,6 +34,9 @@ int main(int argc, char** argv) {
         else if (arg == "--L" && i + 1 < argc)      L = std::atoi(argv[++i]);
         else if (arg == "--alpha" && i + 1 < argc)  alpha = std::atof(argv[++i]);
         else if (arg == "--gamma" && i + 1 < argc)  gamma = std::atof(argv[++i]);
+        else if (arg == "--single_pass") {
+            // single_pass is the default behavior; flag exists for CLI parity
+        }
         else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             return 0;

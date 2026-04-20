@@ -212,7 +212,8 @@ ExperimentRunner::experiment_medoid_start(const std::string& data_path,
     {
         VamanaIndex index1;
         Timer build_timer;
-        index1.build(data_path, R, L, alpha, gamma);
+        // Use a random start node by specifying node 0 (arbitrary but deterministic)
+        index1.build_with_start_node(data_path, R, L, alpha, gamma, 0);
         double build_time = build_timer.elapsed_seconds();
 
         std::vector<double> recalls;
@@ -461,7 +462,7 @@ ExperimentRunner::experiment_degree_analysis(const std::string& data_path,
 }
 
 // ============================================================================
-// Experiment 5: Search Optimization
+// Experiment 5: Search Optimization (exact vs quantized vs dynamic)
 // ============================================================================
 
 std::vector<ExperimentResult>
@@ -480,22 +481,34 @@ ExperimentRunner::experiment_search_optimization(const std::string& data_path,
 
     VamanaIndex index;
     index.build(data_path, R, L, alpha, gamma);
+    index.build_quantization();
 
-    // Test normal search vs scratch buffer search
-    for (int variant = 0; variant < 2; variant++) {
-        std::string var_name = (variant == 0) ? "normal_search" : "scratch_buffer_search";
-        std::cout << "\nTesting " << var_name << std::endl;
+    // Test variants: exact, quantized, quantized+dynamic
+    struct Variant {
+        std::string name;
+        bool quantized;
+        bool dynamic;
+    };
+    std::vector<Variant> variants = {
+        {"exact_search",            false, false},
+        {"quantized_search",        true,  false},
+        {"quantized_dynamic_search", true,  true},
+    };
+
+    for (const auto& var : variants) {
+        std::cout << "\nTesting " << var.name << std::endl;
 
         std::vector<double> latencies;
         std::vector<double> recalls;
-        std::vector<bool> scratch(index.get_npts(), false);
 
         for (uint32_t q = 0; q < nqueries; q++) {
             SearchResult sr;
-            if (variant == 0) {
-                sr = index.search(queries_mat.data.get() + q * queries_mat.dims, K, L);
+            if (var.quantized) {
+                sr = index.search_quantized(
+                    queries_mat.data.get() + q * queries_mat.dims, K, L, var.dynamic);
             } else {
-                sr = index.search_with_scratch(queries_mat.data.get() + q * queries_mat.dims, K, L, scratch);
+                sr = index.search(
+                    queries_mat.data.get() + q * queries_mat.dims, K, L);
             }
 
             double recall = compute_recall(sr.ids, gt_mat.data.get() + q * gt_mat.dims, K);
@@ -510,7 +523,7 @@ ExperimentRunner::experiment_search_optimization(const std::string& data_path,
 
         ExperimentResult result;
         result.experiment_name = "search_optimization";
-        result.variant = var_name;
+        result.variant = var.name;
         result.avg_recall = avg_recall;
         result.avg_latency_us = avg_latency;
 
@@ -518,6 +531,7 @@ ExperimentRunner::experiment_search_optimization(const std::string& data_path,
 
         std::cout << "  Avg latency: " << avg_latency << " us" << std::endl;
         std::cout << "  P95 latency: " << p95_latency << " us" << std::endl;
+        std::cout << "  Avg recall:  " << avg_recall << std::endl;
     }
 
     return results;

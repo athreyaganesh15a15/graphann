@@ -19,6 +19,8 @@ static void print_usage(const char* prog) {
               << " --gt <ground_truth_ibin_path>"
               << " --K <num_neighbors>"
               << " --L <comma_separated_L_values>"
+              << " [--quantized]"
+              << " [--dynamic]"
               << std::endl;
 }
 
@@ -52,6 +54,8 @@ static double compute_recall(const std::vector<uint32_t>& result,
 int main(int argc, char** argv) {
     std::string index_path, data_path, query_path, gt_path, L_str;
     uint32_t K = 10;
+    bool use_quantized = false;
+    bool use_dynamic = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -61,6 +65,8 @@ int main(int argc, char** argv) {
         else if (arg == "--gt" && i + 1 < argc)   gt_path = argv[++i];
         else if (arg == "--K" && i + 1 < argc)    K = std::atoi(argv[++i]);
         else if (arg == "--L" && i + 1 < argc)    L_str = argv[++i];
+        else if (arg == "--quantized")             use_quantized = true;
+        else if (arg == "--dynamic")               use_dynamic = true;
         else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             return 0;
@@ -83,6 +89,11 @@ int main(int argc, char** argv) {
     std::cout << "Loading index..." << std::endl;
     VamanaIndex index;
     index.load(index_path, data_path);
+
+    // --- Build quantization if requested ---
+    if (use_quantized) {
+        index.build_quantization();
+    }
 
     // --- Load queries ---
     std::cout << "Loading queries from " << query_path << "..." << std::endl;
@@ -113,8 +124,12 @@ int main(int argc, char** argv) {
 
     uint32_t nq = queries.npts;
 
-    // --- Run search for each L value ---
-    std::cout << "\n=== Search Results (K=" << K << ") ===" << std::endl;
+    // --- Print configuration ---
+    std::cout << "\n=== Search Results (K=" << K;
+    if (use_quantized) std::cout << ", quantized";
+    if (use_dynamic)   std::cout << ", dynamic_beam";
+    std::cout << ") ===" << std::endl;
+
     std::cout << std::setw(8) << "L"
               << std::setw(14) << "Recall@" + std::to_string(K)
               << std::setw(16) << "Avg Dist Cmps"
@@ -130,7 +145,12 @@ int main(int argc, char** argv) {
 
         #pragma omp parallel for schedule(dynamic, 16)
         for (uint32_t q = 0; q < nq; q++) {
-            SearchResult res = index.search(queries.row(q), K, L);
+            SearchResult res;
+            if (use_quantized) {
+                res = index.search_quantized(queries.row(q), K, L, use_dynamic);
+            } else {
+                res = index.search(queries.row(q), K, L);
+            }
 
             recalls[q] = compute_recall(res.ids, gt.row(q), K);
             dist_cmps[q] = res.dist_cmps;

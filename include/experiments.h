@@ -56,7 +56,7 @@ class ExperimentRunner {
                               const std::vector<float>& alpha_values,
                               uint32_t K);
 
-    // Test search optimization (normal vs scratch buffer)
+    // Test search optimization (exact vs quantized vs dynamic)
     static std::vector<ExperimentResult>
     experiment_search_optimization(const std::string& data_path,
                                   const std::string& query_path,
