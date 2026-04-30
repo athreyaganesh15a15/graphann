@@ -11,6 +11,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Find OpenMP
+if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Homebrew libomp paths for Apple Silicon
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include")
+    set(OpenMP_CXX_LIB_NAMES omp)
+    set(OpenMP_omp_LIBRARY /opt/homebrew/opt/libomp/lib/libomp.dylib)
+endif()
 find_package(OpenMP REQUIRED)
 
 # Library with shared sources

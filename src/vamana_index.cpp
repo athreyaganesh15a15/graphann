@@ -153,7 +153,20 @@ VamanaIndex::greedy_search(const float* query, uint32_t L,
             threshold = candidates.back().first;
         }
 
-        for (uint32_t nbr : neighbors) {
+        for (size_t ni = 0; ni < neighbors.size(); ni++) {
+            // --- Software prefetching: hide DRAM latency ---
+            // Issue prefetch 3 iterations ahead so data arrives by the time
+            // we need it (~50-100ns DRAM latency vs ~50ns per distance calc).
+            if (ni + 3 < neighbors.size()) {
+                uint32_t pf_id = neighbors[ni + 3];
+                if (!build_mode_ && use_quantized && quantized_) {
+                    __builtin_prefetch(quantizer_.get_row(quant_data_.data(), pf_id), 0, 1);
+                } else {
+                    __builtin_prefetch(get_vector(pf_id), 0, 1);
+                }
+            }
+
+            uint32_t nbr = neighbors[ni];
             if (visited[nbr])
                 continue;
             visited[nbr] = true;
