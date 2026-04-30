@@ -1,0 +1,20 @@
+Loading index...
+Index loaded: 1000000 points, 128 dims, start=123742
+Loading queries from tmp/sift_query.fbin...
+  Queries: 10000 x 128
+Loading ground truth from tmp/sift_gt.ibin...
+  Ground truth: 10000 x 100
+
+=== Search Results (K=10, dynamic_beam) ===
+       L     Recall@10   Avg Dist Cmps  Avg Latency (us)  P99 Latency (us)
+--------------------------------------------------------------------------
+      10        0.8994           997.2             510.2            2866.0
+      20        0.9634          1462.9             810.1            4109.9
+      30        0.9820          1898.6            1098.8            4858.8
+      50        0.9935          2700.6            1581.9            6750.5
+      75        0.9972          3608.3            2151.7            7256.1
+     100        0.9984          4440.1            2732.6            8306.0
+     150        0.9990          5947.9            4293.0           11921.4
+     200        0.9992          7312.8            6764.9           16990.0
+
+Done.
