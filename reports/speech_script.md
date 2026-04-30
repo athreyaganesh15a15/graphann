@@ -9,17 +9,17 @@
 **Time allocation: ~2 minutes (Slides 1-3)**
 
 **(Slide 1: Title)**
-**Person A:** Good morning, Professor. We are excited to present our project for Algorithms in Data Science, "GraphANN." Over the course of this semester, our team took a baseline graph-based Approximate Nearest Neighbor search algorithm and heavily optimized it. Today, we'll walk you through our journey of scaling it to handle the SIFT1M dataset efficiently using C++.
+**Person A:** Today we will show our work on the DiskANN algorithm and how we optimized it further.
 
 **(Slide 2: The Problem)**
-**Person A:** Let's start with the core problem. We are given one million vectors, each with 128 dimensions—this is the SIFT1M dataset. Given a new query vector, we need to find its 10 closest neighbors. 
+**Person A:** Let's start w ith the core problem. We are given one million vectors, each with 128 dimensions—this is the SIFT1M dataset. Given a new query vector, we need to find its 10 closest neighbors. 
 A naive brute-force approach requires computing the distance between the query and every single point in the dataset. That's 128 million floating-point operations per query, which is far too slow for real-world applications.
 Graph-based Approximate Nearest Neighbor, or ANN, solves this by building a navigable graph where points are nodes and edges connect close neighbors. Instead of an exhaustive search, we greedily "walk" the graph. 
 Our objective for this project was strict: How can we maximize our recall—specifically getting a Recall@10 of at least 99%—while keeping the average search latency under one millisecond and minimizing the memory footprint?
 
 **(Slide 3: Vamana Algorithm)**
 **Person A:** The foundation of our system is the Vamana algorithm. 
-The algorithm operates in two main phases. First is the *Build* phase, where points are inserted sequentially, and a greedy search is used to find candidate neighbors. The edges are then pruned using an alpha-Relative Neighborhood Graph rule. This is a crucial detail because it ensures the graph retains a mix of very close neighbors and longer-range "highway" edges, preventing the search from getting stuck in local minima.
+The algorithm operates in two main phases. First is the *Build* phase, where points are inserted sequentially, and a greedy search is used to find candidate neighbors. The edges are then pruned using an alpha-RNG rule. It ensures the graph retains a mix of very close neighbors and longer-range "highway" edges, preventing the search from getting stuck in local minima.
 The second phase is *Search*. We start from a designated entry node and greedily expand the closest unvisited nodes using a candidate list, or "beam," of size *L*. 
 The fundamental trade-off here revolves around this beam width *L*, the graph degree *R*, and the pruning parameter alpha. A larger *L* explores more nodes, giving higher recall, but at the cost of higher latency. I will now hand it over to [Person B] to explain how we broke through this trade-off using our core optimizations.
 
@@ -29,7 +29,7 @@ The fundamental trade-off here revolves around this beam width *L*, the graph de
 **Time allocation: ~3 minutes (Slides 4-6)**
 
 **(Slide 4: Our Optimizations)**
-**Person B:** Thank you, [Person A]. To push the boundaries of our baseline algorithm, we implemented seven distinct optimizations, broadly categorized into Search Optimizations and Build Improvements. I'll focus on what we did to make the search phase blazing fast.
+**Person B:** I will explain the search optimizations.
 
 **(Slide 5: Opt A: Quantized ADC)**
 **Person B:** Our most impactful optimization was Asymmetric Distance Computation using Quantization.
